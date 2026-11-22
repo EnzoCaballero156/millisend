@@ -73,8 +73,10 @@ def disconnect():
             close_room(room)
             cloudinary_service.clear_files(room)
             room_service.delete(room)
+            print("la sala se borro supongo")
         else:
             room_member_service.leave(username, room)
+            print("se borro o no")
             message = message_service.send(username, room, "se retiró de la sala.", [])
             leave_msg = message_service.format_message(message, [])
             socketio.emit("message", leave_msg, to=room)

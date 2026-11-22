@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import redis
 import os
 
 load_dotenv()
@@ -18,8 +19,12 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = fr"sqlite:///{os.path.join(base_dir, "db.sqlite")}"
     SQLALCHEMY_ECHO = True
 
-    SESSION_TYPE = "filesystem"
-    SESSION_COOKIE_SECURE = True
+    SESSION_TYPE = "redis"
+    SESSION_PERMANENT = False
+    SESSION_USE_SIGNER = True
+
+    SESSION_REDIS = redis.from_url("redis://127.0.0.1:6379?protocol=2")
+    SESSION_COOKIE_SECURE = False
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")

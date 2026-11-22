@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Home from './pages/Home/Home';
 import Room from './pages/Room/Room';
@@ -6,13 +6,27 @@ import './App.css';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import api from './services/api';
+import ProtectedRoute from './utils/ProtectedRoute';
 
 export default function App() {
   const [currentRoomData, setCurrentRoomData] = useState(null);
+  const [roomLoading, setRoomLoading] = useState(true)
 
-  const handleJoinSuccess = (data) => {
-    setCurrentRoomData(data);
-  };
+  const fetchRoomData = async () => {
+    try {
+      const res = await api.get(`/api/room/`);
+      setCurrentRoomData(res.data);
+    } catch (err) {
+      console.error('Error cargando sala', err);
+      setCurrentRoomData(null)
+    } finally {
+      setRoomLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRoomData()
+  }, [])
 
   const handleLeaveRoom = () => {
     setCurrentRoomData(null);
@@ -34,11 +48,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={!currentRoomData ? (
-          <Home onJoinSuccess={handleJoinSuccess} onLoginClick={handleLoginClick} onRegisterClick={handleRegisterClick} onLogoutClick={handleLogoutClick} />
-        ) : (
-          <Room roomData={currentRoomData} onLeave={handleLeaveRoom} onLoginClick={handleLoginClick} onRegisterClick={handleRegisterClick} onLogoutClick={handleLogoutClick}/>
-        )}/>
+        <Route path="/" element={<Home onRoomLoaded={fetchRoomData} onLoginClick={handleLoginClick} onRegisterClick={handleRegisterClick} onLogoutClick={handleLogoutClick} />}/>
+        <Route element={<ProtectedRoute roomLoading={roomLoading} permiso={currentRoomData !== null} redirect="/"/>}>
+          <Route path="/room" element={<Room roomData={currentRoomData} onLeave={handleLeaveRoom} onLoginClick={handleLoginClick} onRegisterClick={handleRegisterClick} onLogoutClick={handleLogoutClick}/>}/>
+        </Route>
         <Route path="/login" element={<Login onRegisterClick={handleRegisterClick}/>} />
         <Route path="/register" element={<Register onLoginClick={handleLoginClick}/>} />
       </Routes>

@@ -3,9 +3,11 @@ import api from '../../services/api';
 import './Home.css';
 import { useSession } from '../../context/SessionContext';
 import Logo from "../../components/Logo";
+import { useNavigate } from 'react-router-dom';
 
-export default function Home({ onJoinSuccess, onLoginClick, onRegisterClick, onLogoutClick }) {
+export default function Home({ onRoomLoaded, onLoginClick, onRegisterClick, onLogoutClick }) {
   const { user, setUser } = useSession()
+  const navigate = useNavigate()
 
   const [joinCode, setJoinCode] = useState(['', '', '', '', '', '']);
   const [joinUsername, setJoinUsername] = useState('');
@@ -60,20 +62,12 @@ export default function Home({ onJoinSuccess, onLoginClick, onRegisterClick, onL
     const fullCode = joinCode.join('');
 
     try {
-      const response = await api.post('/api/room/', {
+      await api.post('/api/room/', {
         username: joinUsername,
         code: fullCode
       });
-
-      onJoinSuccess({
-        room: response.data.room,
-        roomName: response.data.roomName,
-        username: joinUsername,
-        isHost: response.data.isHost,
-        host: response.data.host,
-        members: response.data.members,
-        expiresAt: response.data.expiresAt
-      });
+      await onRoomLoaded();
+      navigate('/room')
     } catch (err) {
       setErrorMsg(err.response?.data?.error || 'Error al intentar unirse');
     }
@@ -84,20 +78,12 @@ export default function Home({ onJoinSuccess, onLoginClick, onRegisterClick, onL
     setErrorMsg('');
 
     try {
-      const response = await api.post('/api/room/create', {
+      await api.post('/api/room/create', {
         username: createUsername,
         roomName: createRoomName
       });
-
-      onJoinSuccess({
-        room: response.data.room,
-        roomName: response.data.roomName,
-        username: createUsername,
-        isHost: response.data.isHost,
-        host: response.data.host,
-        members: response.data.members,
-        expiresAt: response.data.expiresAt
-      });
+      await onRoomLoaded();
+      navigate('/room')
     } catch (err) {
       setErrorMsg(err.response?.data?.error || 'Error al crear sala');
     }

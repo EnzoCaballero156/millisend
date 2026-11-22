@@ -8,6 +8,32 @@ room_bp = Blueprint("room_bp", __name__)
 room_repository = RoomRepository()
 room_service = RoomService(room_repository)
 
+@room_bp.get("/")
+def get_room_data():
+    username = session.get("username")
+    code = session.get("room")
+
+    if not username or not code:
+        return jsonify({"error": "No autorizado."}), 401
+
+    room = room_service.find_by_code(code)
+
+    if room is None:
+        return jsonify({"error": "La sala no existe."}), 404
+
+    room_members = [member.username for member in room.members]
+
+    return jsonify({
+        "message": "Te uniste a la sala.", 
+        "username": username,
+        "room": code, 
+        "roomName": room.name,
+        "isHost": username == room.host,
+        "host": room.host,
+        "members": room_members,
+        "expiresAt": room.expiresAt
+    })
+
 @room_bp.post("/")
 def join():
     data = request.get_json()
@@ -63,7 +89,6 @@ def create_room():
         "roomName": new_room.name,
         "isHost": True,
         "host": username,
-        "members": new_room.members,
         "expiresAt": new_room.expiresAt
     })
 
