@@ -1,0 +1,104 @@
+/* ============ Sala de espera ============ */
+.wait-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.wait-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 6vw, 100px);
+}
+
+/* ---- Columna izquierda ---- */
+.wait-info {
+  text-align: center;
+}
+
+.wait-lead {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: clamp(1.15rem, 2.1vw, 1.9rem);
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.wait-room-name {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: clamp(2.4rem, 7vw, 6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
+}
+
+.wait-host {
+  margin: 0;
+  font-size: clamp(1.1rem, 2vw, 1.75rem);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.wait-host strong {
+  font-weight: 700;
+}
+
+.wait-host span {
+  font-weight: 400;
+}
+
+/* ---- Tarjeta ---- */
+.wait-card {
+  width: 100%;
+  max-width: 520px;
+  justify-self: center;
+}
+
+.wait-card .card-desc {
+  min-height: 0;
+  margin-bottom: 18px;
+}
+
+.wait-card .error-toast {
+  max-width: none;
+  margin-bottom: 16px;
+}
+
+.wait-card .text-input {
+  margin-bottom: 18px;
+}
+
+.wait-card .btn-primary {
+  margin-top: 8px;
+}
+
+.wait-card .btn-primary:disabled,
+.wait-card .btn-primary:disabled:hover {
+  background: #044c8f;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wait-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  color: #cbd5e0;
+  font-size: 1.1rem;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .wait-main {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    padding-top: 28px;
+  }
+}

@@ -83,6 +83,22 @@ const IconCheck = () => (
   <Svg><path d="M20 6L9 17l-5-5" /></Svg>
 );
 
+const IconShare = () => (
+  <Svg>
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+  </Svg>
+);
+const IconClock = () => (
+  <Svg size={18}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Svg>
+);
+
+
 function FileBadge({ file, big }) {
   const ext = getExt(file);
   return (
@@ -103,7 +119,9 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [roomMembers, setRoomMembers] = useState(members && members.length > 0 ? members : [username]);
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [qrUrl, setQRUrl] = useState(null);
+  const [invitationUrl, setInvitationUrl] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todos');
@@ -112,6 +130,7 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -128,6 +147,11 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  useEffect(() => {
+    fetchQRCode();
+    fetchInvitationURL();
+  }, [room])
 
   useEffect(() => {
     socket.connect();
@@ -187,6 +211,15 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
     return () => window.removeEventListener('keydown', onKey);
   }, [showCloseModal]);
 
+  useEffect(() => {
+    if (!showShareModal) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setShowShareModal(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showShareModal]);
+
   const fetchRoomFiles = async () => {
     try {
       const res = await api.get(`/api/room/files/${room}`);
@@ -198,10 +231,38 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
     }
   };
 
-  const copyRoomCode = () => {
-    navigator.clipboard.writeText(room);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const fetchQRCode = async () => {
+    try {
+      let url;
+      const res = await api.get(`/api/room/qr`, {
+        responseType: "blob"
+      });
+
+      url = URL.createObjectURL(res.data)
+      setQRUrl(url)
+    } catch (err) {
+      console.error('Error generando el código QR', err);
+    }
+  }
+
+  const fetchInvitationURL = async () => {
+    try {
+      const res = await api.get(`/api/room/invitation`);
+      setInvitationUrl(res.data.url)
+    } catch (err) {
+      console.error('Error generando el enlace de invitación', err);
+    }
+  }
+
+  const copyInvitation = async () => {
+    if (!invitationUrl) return;
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (err) {
+      console.error('No se pudo copiar el enlace', err);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -302,17 +363,21 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
                   {showCode ? <IconEyeOff /> : <IconEye />}
                 </button>
               </div>
-              <button type="button" className="icon-btn boxed" onClick={copyRoomCode} title="Copiar código" aria-label="Copiar código">
-                {copied ? <IconCheck /> : <IconCopy />}
+              <button
+                type="button"
+                className="icon-btn boxed"
+                onClick={() => setShowShareModal(true)}
+                title="Compartir sala"
+                aria-label="Compartir sala"
+                aria-haspopup="dialog"
+              >
+                <IconShare />
               </button>
             </div>
 
             <div className="bar-info">
+              <IconClock />
               <span className="timer-text">Tiempo restante {formatTime(timeLeft)}</span>
-              <button type="button" className="members-badge" onClick={openPeople} title="Ver personas">
-                <span className="avatar-mini">{username.substring(0, 2).toUpperCase()}</span>
-                <span>{roomMembers.length}</span>
-              </button>
             </div>
 
             <div className="bar-actions">
@@ -324,7 +389,11 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
               >
                 Archivos
               </button>
-              <button type="button" className="btn-bar danger" onClick={() => (username === host || isHost) ? setShowCloseModal(true) : onLeave()}>
+              <button
+                type="button"
+                className="btn-bar danger"
+                onClick={() => (username === host || isHost) ? setShowCloseModal(true) : onLeave()}
+              >
                 Cerrar chat
               </button>
             </div>
@@ -530,6 +599,66 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
             <div className="modal-actions">
               <button type="button" className="modal-btn confirm" onClick={onLeave}>Sí</button>
               <button type="button" className="modal-btn cancel" onClick={() => setShowCloseModal(false)} autoFocus>No</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div
+            className="modal-card share-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Compartir sala"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="share-close"
+              onClick={() => setShowShareModal(false)}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+
+            <div className="share-code">
+              <span className="code-label">CÓDIGO</span>
+              <div className="code-field">
+                <span className="code-value">{showCode ? room : maskedCode}</span>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setShowCode((v) => !v)}
+                  title={showCode ? 'Ocultar código' : 'Mostrar código'}
+                  aria-label={showCode ? 'Ocultar código' : 'Mostrar código'}
+                >
+                  {showCode ? <IconEyeOff /> : <IconEye />}
+                </button>
+              </div>
+            </div>
+
+            <div className="share-qr">
+              {qrUrl
+                ? <img src={qrUrl} alt="Código QR de la sala" />
+                : <div className="share-loading">Cargando QR...</div>}
+            </div>
+
+            <div className="share-link">
+              {invitationUrl ? (
+                <>
+                  <p className="share-url">{invitationUrl}</p>
+                  <button
+                    type="button"
+                    className={`share-copy ${copiedLink ? 'copied' : ''}`}
+                    onClick={copyInvitation}
+                  >
+                    {copiedLink ? 'Copiado' : 'Copiar'}
+                  </button>
+                </>
+              ) : (
+                <p className="share-loading">Generando enlace...</p>
+              )}
             </div>
           </div>
         </div>

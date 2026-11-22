@@ -18,6 +18,9 @@ class RoomService:
                 continue
             break
         return code
+
+    def find_by_id(self, id):
+        return self.room_repository.find_by_id(id)
     
     def find_by_code(self, code):
         return self.room_repository.find_by_code(code)

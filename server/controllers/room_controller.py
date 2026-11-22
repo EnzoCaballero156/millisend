@@ -1,12 +1,14 @@
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, request, session, send_file
 
 from repositories.room.room_repository import RoomRepository
 from services.room_service import RoomService
+from services.qr_service import QRService
 
 room_bp = Blueprint("room_bp", __name__)
 
 room_repository = RoomRepository()
 room_service = RoomService(room_repository)
+qr_service = QRService()
 
 @room_bp.get("/")
 def get_room_data():
@@ -32,6 +34,18 @@ def get_room_data():
         "host": room.host,
         "members": room_members,
         "expiresAt": room.expiresAt
+    })
+
+@room_bp.get("/<id>/exists")
+def room_existence(id):
+    room = room_service.find_by_id(id)
+    if room is None:
+        return jsonify({"error": "La sala no existe."}), 404
+
+    return jsonify({
+        "name": room.name, 
+        "code": room.code, 
+        "host": room.host
     })
 
 @room_bp.post("/")
@@ -109,3 +123,34 @@ def show_files(room_code):
         ]
     })
 
+@room_bp.get('/qr')
+def get_qr():
+    code = session.get("room")
+    if not code:
+        return jsonify({"error": "No autorizado."}), 401
+    
+    room = room_service.find_by_code(code)
+    if room is None:
+        return jsonify({"error": "La sala no existe."}), 404
+
+    url = qr_service.generate_url(room)
+    buffer = qr_service.qr_to_bytes(url)
+
+    return send_file(
+        buffer,
+        mimetype="image/png",
+        as_attachment=False,
+        download_name='qr.png'
+    )
+
+@room_bp.get('/invitation')
+def get_invitation_url():
+    code = session.get("room")
+    if not code:
+        return jsonify({"error": "No autorizado."}), 401
+    
+    room = room_service.find_by_code(code)
+    if room is None:
+        return jsonify({"error": "La sala no existe."}), 404
+
+    return jsonify({"url": qr_service.generate_url(room)})
