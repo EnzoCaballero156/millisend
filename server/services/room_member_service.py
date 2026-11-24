@@ -10,6 +10,9 @@ class RoomMemberService:
     def find_all_by_room_id(self, room_id):
         return self.room_member_repository.find_all_by_room_id(room_id)
 
+    def find_by_username_and_room_code(self, username, room_id):
+        return self.room_member_repository.find_by_username_and_room_id(username, room_id)
+
     def join(self, username, room_code):
         if not username or not room_code:
             raise Exception("Datos incompletos.")

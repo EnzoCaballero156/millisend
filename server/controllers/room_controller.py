@@ -1,13 +1,17 @@
 from flask import Blueprint, jsonify, request, session, send_file
 
 from repositories.room.room_repository import RoomRepository
+from repositories.room_member.room_member_repository import RoomMemberRepository
 from services.room_service import RoomService
+from services.room_member_service import RoomMemberService
 from services.qr_service import QRService
 
 room_bp = Blueprint("room_bp", __name__)
 
 room_repository = RoomRepository()
+room_member_repository = RoomMemberRepository()
 room_service = RoomService(room_repository)
+room_member_service = RoomMemberService(room_member_repository, room_repository)
 qr_service = QRService()
 
 @room_bp.get("/")
@@ -65,10 +69,15 @@ def join():
     if room is None:
         return jsonify({"error": "La sala no existe."}), 404
 
-    session["room"] = code
-    session["username"] = username
+    user_exists = room_member_service.find_by_username_and_room_code(username, room.id) is not None
+
+    if user_exists:
+        return jsonify({"error": "Ya existe un miembro con el mismo nombre de usuario."}), 401
 
     room_members = [member.username for member in room.members]
+
+    session["room"] = code
+    session["username"] = username
     
     return jsonify({
         "message": "Te uniste a la sala.", 
