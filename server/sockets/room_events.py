@@ -59,6 +59,26 @@ def on_join(data):
     except Exception as e:
         socketio.emit("error", {"error": str(e)}, to=request.sid)
 
+@socketio.on("destroy_room")
+def destroy_room():
+    room = session.get("room")
+    username = session.get("username")
+    target = room_service.find_by_code(room)
+
+    if not room or target is None:
+        return
+
+    if username != target.host:
+        return
+    
+    try:
+        socketio.emit("close_room", to=room)
+        close_room(room)
+        cloudinary_service.clear_files(room)
+        room_service.delete(room)
+    except Exception as e:
+        socketio.emit("error", {"error": str(e)}, to=request.sid)
+
 @socketio.on("disconnect")
 def disconnect():
     room = session.get("room")
@@ -73,10 +93,8 @@ def disconnect():
             close_room(room)
             cloudinary_service.clear_files(room)
             room_service.delete(room)
-            print("la sala se borro supongo")
         else:
             room_member_service.leave(username, room)
-            print("se borro o no")
             message = message_service.send(username, room, "se retiró de la sala.", [])
             leave_msg = message_service.format_message(message, [])
             socketio.emit("message", leave_msg, to=room)

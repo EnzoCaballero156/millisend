@@ -7,7 +7,7 @@ from utils.app_builder import AppBuilder
 from utils.extensions import socketio, cors, db, server_session, bcrypt
 from controllers.room_controller import room_bp
 from controllers.auth_controller import auth_bp
-from config import ProductionConfig
+from config import DevelopmentConfig
 import sockets.room_events
 from dotenv import load_dotenv
 import cloudinary
@@ -18,7 +18,7 @@ load_dotenv()
 app = (
     AppBuilder()
         .create_app(__name__)
-        .configure(ProductionConfig)
+        .configure(DevelopmentConfig)
             .set_static_folder("../client/dist")
             .set_static_url_path("/")
         .register_bp(room_bp, "/api/room")

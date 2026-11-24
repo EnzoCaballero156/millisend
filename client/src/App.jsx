@@ -29,8 +29,14 @@ export default function App() {
     fetchRoomData()
   }, [])
 
-  const handleLeaveRoom = () => {
-    setCurrentRoomData(null);
+  const handleLeaveRoom = async () => {
+    try {
+      await api.post(`/api/room/leave`);
+    } catch (err) {
+      console.error(`Error, pero saliendo igual`)
+    } finally {
+      setCurrentRoomData(null)
+    }
   };
 
   const handleLoginClick = () => {

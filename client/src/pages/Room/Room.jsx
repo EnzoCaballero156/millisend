@@ -125,19 +125,35 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todos');
-  const [timeLeft, setTimeLeft] = useState(expiresAt ? Math.max(0, Math.floor(expiresAt - (Date.now() / 1000))) : 3600);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showRoomClosedModal, setShowRoomClosedModal] = useState(false)
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
+    if (!expiresAt) return;
+
+    const calculateTimeLeft = () => {
+      const nowSeconds = Date.now() / 1000
+      return Math.max(0, Math.floor(expiresAt - nowSeconds))
+    }
+
+    setTimeLeft(calculateTimeLeft())
+
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      const remaining = calculateTimeLeft()
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer)
+        socket.emit("destroy_room")
+      }
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -186,8 +202,7 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
     });
 
     socket.on('close_room', () => {
-      alert("El host cerró la sala.")
-      window.location.href = "/"
+      setShowRoomClosedModal(true)
     })
 
     return () => {
@@ -659,6 +674,27 @@ export default function Room({ roomData, onLeave, onLoginClick, onRegisterClick,
               ) : (
                 <p className="share-loading">Generando enlace...</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRoomClosedModal && (
+        <div className="modal-overlay">
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="modal-title" className="modal-title">Aviso</h3>
+            <p className="modal-text">
+              Se cerró la sala.<br />
+              Se te regresará automaticamente a la página de inicio.
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="modal-btn confirm" onClick={onLeave}>Entendido</button>
             </div>
           </div>
         </div>

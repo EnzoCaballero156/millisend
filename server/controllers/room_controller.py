@@ -80,6 +80,12 @@ def join():
         "expiresAt": room.expiresAt
     })
 
+@room_bp.post("/leave")
+def leave():
+    session.pop("room")
+    session.pop("username")
+    return jsonify({"message": "Saliste de la sala."})
+
 @room_bp.post("/create")
 def create_room():
     data = request.get_json()
